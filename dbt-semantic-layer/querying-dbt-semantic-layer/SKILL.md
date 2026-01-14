@@ -1,5 +1,5 @@
 ---
-name: query-dbt-semantic-layer
+name: querying-dbt-semantic-layer
 description: Use when answering business questions that could be answered by querying data, when dbt MCP tools are available
 ---
 
