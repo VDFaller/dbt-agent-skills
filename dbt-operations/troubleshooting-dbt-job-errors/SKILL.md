@@ -9,7 +9,7 @@ Systematically diagnose and resolve dbt Cloud job failures using available MCP t
 
 ## When to Use
 
-- dbt Cloud job failed and you need to find the root cause
+- dbt Cloud / dbt platform job failed and you need to find the root cause
 - Intermittent job failures that are hard to reproduce
 - Error messages that don't clearly indicate the problem
 - Post-merge failures where a recent change may have caused the issue
@@ -29,9 +29,8 @@ A failing test is evidence of a problem. Changing the test to pass hides the pro
 | "Just make the test pass" | The test is telling you something is wrong. Investigate first. |
 | "There's a board meeting in 2 hours" | Rushing to a fix without diagnosis creates bigger problems. |
 | "We've already spent 2 days on this" | Sunk cost doesn't justify skipping proper diagnosis. |
-| "The DBAs say the warehouse is fine" | The issue might be how dbt uses the warehouse, not the warehouse itself. |
 | "I'll just update the accepted values" | Are the new values valid business data or bugs? Verify first. |
-| "It's probably just a flaky test" | "Flaky" means there's a timing/data issue. Find it. |
+| "It's probably just a flaky test" | "Flaky" means there's an overall issue. Find it. We don't allow flaky tests to stay. |
 
 ## Workflow
 
@@ -81,20 +80,30 @@ get_job_run_error(run_id=67890)
 **Ask the user to provide these artifacts:**
 
 1. **Job run logs** from dbt Cloud UI (Debug logs preferred)
-2. **`target/run_results.json`** - contains execution status for each node
-3. **`logs/dbt.log`** - detailed execution logs with timestamps
+2. **`run_results.json`** - contains execution status for each node
+
+To get the `run_results.json`, generate the artifact URL for the user:
+```
+https://<DBT_ENDPOINT>/api/v2/accounts/<ACCOUNT_ID>/runs/<RUN_ID>/artifacts/run_results.json?step=<STEP_NUMBER>
+```
+
+Where:
+- `<DBT_ENDPOINT>` - The dbt Cloud endpoint (e.g., `cloud.getdbt.com`)
+- `<ACCOUNT_ID>` - The dbt Cloud account ID
+- `<RUN_ID>` - The failed run ID
+- `<STEP_NUMBER>` - The step that failed (e.g., if step 4 failed, use `?step=4`)
 
 Example request:
-> "I don't have access to the dbt MCP server. Could you provide the following from the failed job run:
+> "I don't have access to the dbt MCP server. Could you provide:
 > 1. The debug logs from dbt Cloud (Job Run → Logs → Download)
-> 2. The `run_results.json` file from the target directory
-> 3. The `dbt.log` file from the logs directory (if available)"
+> 2. The run_results.json - open this URL and copy/paste or upload the contents:
+>    `https://cloud.getdbt.com/api/v2/accounts/12345/runs/67890/artifacts/run_results.json?step=4`
 
 ## Step 2: Classify the Error
 
 | Error Type | Indicators | Primary Investigation |
 |------------|-----------|----------------------|
-| **Infrastructure** | Connection timeout, warehouse error, permissions | Check warehouse status, connection settings, thread count |
+| **Infrastructure** | Connection timeout, warehouse error, permissions | Check warehouse status, connection settings |
 | **Code/Compilation** | Undefined macro, syntax error, parsing error | Check git history for recent changes, use LSP tools |
 | **Data/Test Failure** | Test failed with N results, schema mismatch | Use `discovering-data` skill to query actual data |
 
@@ -102,10 +111,9 @@ Example request:
 
 ### For Infrastructure Errors
 
-1. Check job configuration (thread count, timeout settings)
-2. Review warehouse connection limits
-3. Look for concurrent jobs competing for resources
-4. Check if failures correlate with time of day or data volume
+1. Check job configuration (timeout settings, execution steps, etc.)
+2. Look for concurrent jobs competing for resources
+3. Check if failures correlate with time of day or data volume
 
 ### For Code/Compilation Errors
 
@@ -113,13 +121,22 @@ Example request:
 
    If you're not in the dbt project directory, use the dbt MCP server to find the repository:
    ```
-   # Get project details including repository URL
+   # Get project details including repository URL and project subdirectory
    get_project_details(project_id=<project_id>)
    ```
+
+   The response includes:
+   - `repository` - The git repository URL
+   - `dbt_project_subdirectory` - Optional subfolder where the dbt project lives (e.g., `dbt/`, `transform/analytics/`)
 
    Then either:
    - Query the repository directly using `gh` CLI if it's on GitHub
    - Clone to a temporary folder: `git clone <repo_url> /tmp/dbt-investigation`
+
+   **Important:** If the project is in a subfolder, navigate to it after cloning:
+   ```bash
+   cd /tmp/dbt-investigation/<project_subdirectory>
+   ```
 
    Once in the project directory:
    ```bash
@@ -127,7 +144,15 @@ Example request:
    git diff HEAD~5..HEAD -- models/ macros/
    ```
 
-2. **Use dbt CLI/LSP tools if available:**
+2. **Use dbt CLI/LSP tools to check for errors:**
+
+   If the dbt MCP server is available, use its tools:
+   ```
+   dbt_parse()                              # Check for parsing errors
+   dbt_compile(models="failing_model")      # Check compilation
+   ```
+
+   Otherwise, use the dbt CLI directly:
    ```bash
    dbt parse          # Check for parsing errors
    dbt compile --select failing_model  # Check compilation
@@ -218,7 +243,6 @@ Brief description of the failure and symptoms.
 ### Hypotheses Tested
 | Hypothesis | Evidence | Result |
 |------------|----------|--------|
-| Connection timeout due to high thread count | Thread count is 4, within limits | Ruled out |
 | Recent code change | No changes to affected models in 7 days | Ruled out |
 
 ## Patterns Observed
