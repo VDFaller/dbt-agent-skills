@@ -47,6 +47,12 @@ description: Use when building, modifying, or refactoring dbt models, sources, t
   - Always use `{{ ref }}` and `{{ source }}` over hardcoded table names
   - Use CTEs over subqueries
 - **REQUIRED:** Before building a model, use the `planning-dbt-models` skill to plan your approach.
+- **REQUIRED:** Before modifying or building on existing models, read their YAML documentation:
+  - Find the model's YAML file (can be any `.yml` file in the models directory)
+  - Check the model's `description` to understand its purpose
+  - Read column-level `description` fields to understand what each column represents
+  - Review any `meta` properties that document business logic or ownership
+  - This context prevents misusing columns or duplicating existing logic
 - When implementing a model, you should use `dbt show` regularly to:
   - preview the input data you will work with, so that you use relevant columns and values
   - preview the results of your model, so that you know your work is correct
@@ -64,6 +70,7 @@ description: Use when building, modifying, or refactoring dbt models, sources, t
 |---------|----------------|-----|
 | One-shotting models | Data work requires validation; schemas are unknown | Use `planning-dbt-models` skill, iterate with `dbt show` |
 | Assuming schema knowledge | Column names, types, and values vary across warehouses | Use `discovering-data` skill before writing SQL |
+| Skipping model documentation | Column names don't reveal business meaning | Read YAML descriptions before modifying models |
 | Creating unnecessary models | Warehouse compute has real costs | Extend existing models when possible |
 | Hardcoding table names | Breaks dbt's dependency graph | Always use `{{ ref() }}` and `{{ source() }}` |
 | Global config changes | Configuration cascades unexpectedly | Change surgically, match existing patterns |
@@ -81,6 +88,7 @@ description: Use when building, modifying, or refactoring dbt models, sources, t
 ## Red Flags - STOP and Reconsider
 
 - About to write SQL without checking actual column names
+- Modifying a model without reading its YAML documentation first
 - Creating a new model when a column addition would suffice
 - User gave table names as "the usual columns" - verify anyway
 - Skipping `dbt show` validation because "it's straightforward"
