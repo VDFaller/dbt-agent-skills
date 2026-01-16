@@ -33,13 +33,13 @@ flowchart TB
 ### 1. Server Type
 **Ask:** "Do you want to use the **local** or **remote** dbt MCP server?"
 
-| Local Server | Remote Server |
-|--------------|---------------|
-| Runs on your machine via `uvx` | Connects via HTTP to dbt platform |
-| Best for development (authoring models, tests, docs) | Best for consumption (querying metrics, exploring metadata) |
-| Supports dbt CLI commands | No CLI commands (run, build, test) |
-| Works without dbt platform account | Requires dbt platform account |
-| No credit consumption | Consumes dbt Copilot credits |
+| Local Server                                                                                                                                             | Remote Server                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Runs on your machine via `uvx`                                                                                                                           | Connects via HTTP to dbt platform                           |
+| Required for development (authoring models, tests, docs) but can also connect to the dbt platform for consumption (querying metrics, exploring metadata) | Best for consumption (querying metrics, exploring metadata) |
+| Supports dbt CLI commands (run, build, test, show)                                                                                                       | No CLI commands (run, build, test)                          |
+| Works without a dbt platform account but can also connect to the dbt platform for development (authoring models, tests, docs)                            | Requires dbt platform account                               |
+| No credit consumption                                                                                                                                    | Consumes dbt Copilot credits                                |
 
 ### 2. MCP Client
 **Ask:** "Which MCP client are you using?"
