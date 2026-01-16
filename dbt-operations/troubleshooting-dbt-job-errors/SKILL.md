@@ -146,17 +146,23 @@ Example request:
    git diff HEAD~5..HEAD -- models/ macros/
    ```
 
-2. **Use dbt CLI/LSP tools to check for errors:**
+2. **Use the CLI and LSP tools from the dbt MCP server or use the dbt CLI to check for errors:**
 
    If the dbt MCP server is available, use its tools:
    ```
-   dbt_parse()                              # Check for parsing errors
-   dbt_compile(models="failing_model")      # Check compilation
+   # CLI tools
+   mcp__dbt_parse()                              # Check for parsing errors
+   mcp__dbt_list_models()                        # With selectos and `+` for finding models dependencies
+   mcp__dbt_compile(models="failing_model")      # Check compilation
+   
+   # LSP tools
+   mcp__dbt_get_column_lineage()                 # Check column lineage
    ```
 
    Otherwise, use the dbt CLI directly:
    ```bash
    dbt parse          # Check for parsing errors
+   dbt list --select +failing_model          # Check for models upstream of the failing model
    dbt compile --select failing_model  # Check compilation
    ```
 
@@ -168,15 +174,18 @@ Example request:
 
 **Use the `discovering-data` skill to investigate the actual data.**
 
-1. **Query the failing test's underlying data:**
+1. **Get the test SQL**
    ```bash
-   dbt show --inline "SELECT status, COUNT(*) FROM {{ ref('orders') }} GROUP BY 1" --output json
+   dbt compile --select project_name.folder1.folder2.test_unique_name --output json
+   ```
+   the full path for the test can be found with a `dbt ls --resource-type test` command
+
+
+2. **Query the failing test's underlying data:**
+   ```bash
+   dbt show --inline "<query_from_the_test_SQL>" --output json
    ```
 
-2. **Check for unexpected values:**
-   ```bash
-   dbt show --inline "SELECT * FROM {{ ref('orders') }} WHERE status NOT IN ('pending', 'shipped', 'delivered')" --output json
-   ```
 
 3. **Compare to recent git changes:**
    - Did a transformation change introduce new values?
@@ -252,9 +261,8 @@ Brief description of the failure and symptoms.
 - Always fails on model X
 
 ## Suggested Next Steps
-1. [ ] Monitor next 10 runs with detailed logging
-2. [ ] Engage warehouse vendor support
-3. [ ] Consider splitting job into smaller batches
+1. [ ] Check the data ingestion process to see if new data was added
+2. [ ] Check if a new version of dbt or of the dbt adapter was released
 
 ## Related Resources
 - Link to job run logs
