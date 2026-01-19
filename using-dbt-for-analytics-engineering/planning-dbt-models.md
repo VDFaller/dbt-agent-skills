@@ -15,17 +15,21 @@ Use this approach when:
 
 Create a spreadsheet or markdown table with the **ideal output** you want to produce. Include:
 
+- Primary key (or surrogate key if not possible)
 - Column names that match business requirements
 - Sample data rows (numbers don't need to be accurate)
 - The grain/granularity you're targeting
+- The appropriate materialization strategy given the cost and freshness expectations
 
 **Example:** Daily inventory levels
 
-| date       | product_id | product_name | quantity_on_hand | value_on_hand |
-|------------|------------|--------------|------------------|---------------|
-| 2024-01-01 | SKU-001    | Widget A     | 100              | 2500.00       |
-| 2024-01-01 | SKU-002    | Widget B     | 50               | 1250.00       |
-| 2024-01-02 | SKU-001    | Widget A     | 95               | 2375.00       |
+_In practice, use `dbt_utils.generate_surrogate_key` for the surrogate key_
+
+| inventory_level_id       | date       | product_id | product_name | quantity_on_hand | value_on_hand |
+|--------------------------|------------|------------|--------------|------------------|---------------|
+| 2024-01-01_SKU-001       | 2024-01-01 | SKU-001    | Widget A     | 100              | 2500.00       |
+| 2024-01-01_SKU-002       | 2024-01-01 | SKU-002    | Widget B     | 50               | 1250.00       |
+| 2024-01-02_SKU-001       | 2024-01-02 | SKU-001    | Widget A     | 95               | 2375.00       |
 
 ### Step 2: Mock the SQL query for this output
 
@@ -33,6 +37,7 @@ Write pseudocode or actual SQL that would produce this table, even if you don't 
 
 ```sql
 select
+  {{ dbt_utils.generate_surrogate_key(['date', 'product_id']) }} as inventory_level_id,
   date_trunc('day', ????) as date,
   product_id,
   sum(???) as quantity_on_hand  -- Need running total, not daily sum
@@ -55,9 +60,9 @@ As you write the query, you'll discover what the **upstream model** needs to pro
 
 **Example iteration:** Realized we need a running total, not a daily sum. This means we need window functions over transaction history, not a simple GROUP BY.
 
-### Step 4: Mock the required upstream model
+### Step 4: Mock the required upstream models
 
-Based on your query needs, mock the table you're selecting from:
+Based on your query needs, mock each table you're selecting from:
 
 **Upstream model:** `product_transactions` (one record per inventory transaction)
 
@@ -123,7 +128,13 @@ Now that you know what inputs you need, look at the actual resources available i
 - Do multiple tables need to be unioned?
 - What joins are required?
 
-If a table with the characteristics of the mocked-up `product_transactions` table already exists, use that. Otherwise, add it as another model which needs to be built and recursively repeat the process of establishing its parents' shape and code.
+In order of preference, the possible outcomes are:
+
+| Priority | Scenario | Behaviour |
+|----------|----------|-----------|
+| 1 | Exact match exists | Use it directly |
+| 2 | Partial match exists | Extend it, plan changes recursively if needed |
+| 3 | No match | Create a new model, recursively repeating the planning process |
 
 ### Step 7: Consider edge cases and produce failing unit tests
 
