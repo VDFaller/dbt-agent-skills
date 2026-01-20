@@ -58,7 +58,7 @@ Create an input for each of the nodes the model depends on. Specify the mock dat
 
 ### 3. Mock the output
 
-Specify the data that you expect the model to create given those inputs. Specify the `format` if different than the default (YAML `dict`). The mock data only needs include the subset of columns used within this test case. See the TODO section below to determine which `format` to use.
+Specify the data that you expect the model to create given those inputs. Specify the `format` if different than the default (YAML `dict`). The mock data only needs include the subset of columns used within this test case. See the "Data `format`s for unit tests" section below to determine which `format` to use.
 
 ## Minimal unit test
 
@@ -894,8 +894,6 @@ When using the `dict` or `csv` format, you only have to define the mock data for
 ### Similar testing concepts
 
 There are similar concepts that dbt's `model`, `given`, `expect` lines up with (Hoare triple, Arrange-Act-Assert, Gherkin, What's in a Story?, etc):
-
-TODO: take out the links(?)! Replace with explicit insights that we want it to know about.
 
 | dbt unit test | Description                                | Hoare triple | Arrange-Act-Assert | Gherkin | What's in a Story? |
 |---------------|--------------------------------------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------|--------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|
