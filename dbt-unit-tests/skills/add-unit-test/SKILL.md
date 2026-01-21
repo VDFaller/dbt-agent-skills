@@ -52,11 +52,18 @@ Self explanatory -- the title says it all!
 
 ### 2. Mock the inputs
 
-Create an input for each of the nodes the model depends on. Specify the mock data it should use. The mock data only needs include the subset of columns used within this test case. Specify the `format` if different than the default (YAML `dict`). See the "Data `format`s for unit tests" section below to determine which `format` to use.
+- Create an input for each of the nodes the model depends on.
+- Specify the mock data it should use.
+- Specify the `format` if different than the default (YAML `dict`).
+  - See the "Data `format`s for unit tests" section below to determine which `format` to use.
+- The mock data only needs include the subset of columns used within this test case.
 
 ### 3. Mock the output
 
-Specify the data that you expect the model to create given those inputs. Specify the `format` if different than the default (YAML `dict`). The mock data only needs include the subset of columns used within this test case. See the "Data `format`s for unit tests" section below to determine which `format` to use.
+- Specify the data that you expect the model to create given those inputs.
+- Specify the `format` if different than the default (YAML `dict`).
+  - See the "Data `format`s for unit tests" section below to determine which `format` to use.
+- The mock data only needs include the subset of columns used within this test case.
 
 ## Minimal unit test
 
