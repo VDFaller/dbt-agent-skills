@@ -5,11 +5,9 @@ description: Use when adding unit tests for a dbt model
 
 # Add unit test for a dbt model
 
-## Overview
+## What are unit tests in dbt
 
-Historically, dbt's test coverage was confined to data tests, assessing the quality of input data or resulting datasets' structure. However, these tests could only be executed _after_ building a model. 
-
-There is an additional type of test to dbt - unit tests. In software programming, unit tests validate small portions of your functional code, and they work much the same way here. Unit tests allow you to validate your SQL modeling logic on a small set of static inputs _before_ you materialize your full model in production. Unit tests enable test-driven development, benefiting developer efficiency and code reliability. 
+In software programming, unit tests validate small portions of your functional code, and they work much the same way in dbt. dbt uwnit tests allow you to validate your SQL modeling logic on a small set of static inputs _before_ you materialize your full model in production. dbt unit tests enable test-driven development, benefiting developer efficiency and code reliability.
 
 Unit tests allow enforcing that all the unit tests for a model pass before it is materialized (i.e. dbt won't materialize the model in the database if *any* of its unit tests do not pass).
 
