@@ -75,3 +75,145 @@ unit_tests:
 
 ```
 </file>
+
+# Data `format`s for unit tests
+
+## `dict`
+
+### Inline `dict` example
+
+The `dict` data format is the default if no `format` is defined.
+
+`dict` requires an inline YAML dictionary for `rows`:
+
+<File name='models/schema.yml'>
+
+```yaml
+unit_tests:
+  - name: test_my_model
+    model: my_model
+    given:
+      - input: ref('my_model_a')
+        format: dict
+        rows:
+          - {id: 1, name: gerda}
+          - {id: 2, b: michelle}    
+```
+
+</File>
+
+## `csv`
+
+### Inline `csv` example
+
+When using the `csv` format, you can use either an inline CSV string for `rows`:
+
+<File name='models/schema.yml'>
+
+```yaml
+
+unit_tests:
+  - name: test_my_model
+    model: my_model
+    given:
+      - input: ref('my_model_a')
+        format: csv
+        rows: |
+          id,name
+          1,gerda
+          2,michelle
+
+```
+</File>
+
+### Fixture `csv` example
+
+Or, you can provide the name of a CSV file in the `test-paths` location (`tests/fixtures` by default): 
+
+<File name='models/schema.yml'>
+
+```yaml
+
+unit_tests:
+  - name: test_my_model
+    model: my_model
+    given:
+      - input: ref('my_model_a')
+        format: csv
+        fixture: my_model_a_fixture
+
+```
+</File>
+
+<File name='tests/fixtures/my_model_a_fixture.csv'>
+
+```csv
+
+id,name
+1,gerda
+2,michelle
+
+```
+</File>
+
+## `sql`
+
+Using this format:
+- Provides more flexibility for the unit testing column that have a data type not supported by the `dict` or `csv` formats
+- Allows you to unit test a model that depends on an `ephemeral` model
+
+However, when using `format: sql` you must supply mock data for _all columns_.
+
+When using the `sql` format, you can use either an inline SQL query for `rows`:
+
+### Inline `sql` example
+
+<File name='models/schema.yml'>
+
+```yaml
+
+unit_tests:
+  - name: test_my_model
+    model: my_model
+    given:
+      - input: ref('my_model_a')
+        format: sql
+        rows: |
+          select 1 as id, 'gerda' as name, null as loaded_at union all
+          select 2 as id, 'michelle', null as loaded_at as name
+
+```
+
+</File>
+
+### Fixture `sql` example
+
+Or, you can provide the name of a SQL file in the `test-paths` location (`tests/fixtures` by default): 
+
+<File name='models/schema.yml'>
+
+```yaml
+
+unit_tests:
+  - name: test_my_model
+    model: my_model
+    given:
+      - input: ref('my_model_a')
+        format: sql
+        fixture: my_model_a_fixture
+
+```
+</File>
+
+<File name='tests/fixtures/my_model_a_fixture.sql'>
+
+```sql
+
+select 1 as id, 'gerda' as name, null as loaded_at union all
+select 2 as id, 'michelle', null as loaded_at as name
+
+```
+</File>
+
+**Note:** Contrary to dbt SQL models, Jinja is unsupported within SQL fixtures for unit tests.
+
