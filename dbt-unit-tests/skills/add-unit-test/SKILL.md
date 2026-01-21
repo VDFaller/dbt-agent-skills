@@ -14,7 +14,7 @@ Unit tests allow enforcing that all the unit tests for a model pass before it is
 ## When to use
 
 You should unit test a model:
-- Adding Model-Input-Output scenarios for the general case and edge cases to prevent regressions if the model logic is changed at a later date.
+- Adding Model-Input-Output scenarios for the intended functionality of the model as well as edge cases to prevent regressions if the model logic is changed at a later date.
 - Verifying that a bug fix solves a bug report for an existing dbt model.
 
 More examples:
