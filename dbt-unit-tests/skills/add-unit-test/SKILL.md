@@ -249,6 +249,12 @@ Notes:
 - Only the `sql` format allows you to unit test a model that depends on an ephemeral model -- `dict` and `csv` can't be used in that case.
 - There are no formats that support Jinja.
 
+### Fixture files
+
+The `dict` format only supports inline YAML mock data, but you can also use `csv` or `sql` either inline or in a separate fixture file. Store your fixture files in a `fixtures` subdirectory in any of your `test-paths`. For example, `tests/fixtures/my_unit_test_fixture.sql`.
+
+When using the `dict` or `csv` format, you only have to define the mock data for the columns relevant to you. This enables you to write succinct and _specific_ unit tests. For the `sql` format _all_ columns need to be defined.
+
 # Special cases
 
 ## Unit testing incremental models
@@ -514,12 +520,6 @@ Use the `--empty` flag to build an empty version of the models to save warehouse
 dbt run --select "stg_customers top_level_email_domains" --empty
 
 ```
-
-### Fixture files
-
-The `dict` format only supports inline YAML mock data, but you can also use `csv` or `sql` either inline or in a separate fixture file. Store your fixture files in a `fixtures` subdirectory in any of your `test-paths`. For example, `tests/fixtures/my_unit_test_fixture.sql`. 
-
-When using the `dict` or `csv` format, you only have to define the mock data for the columns relevant to you. This enables you to write succinct and _specific_ unit tests. For the `sql` format _all_ columns need to be defined.
 
 ### Similar testing concepts
 
