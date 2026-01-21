@@ -97,7 +97,7 @@ unit_tests:
         format: dict
         rows:
           - {id: 1, name: gerda}
-          - {id: 2, b: michelle}    
+          - {id: 2, name: michelle}
 ```
 
 </File>
@@ -158,12 +158,6 @@ id,name
 
 ## `sql`
 
-Using this format:
-- Provides more flexibility for the unit testing column that have a data type not supported by the `dict` or `csv` formats
-- Allows you to unit test a model that depends on an `ephemeral` model
-
-However, when using `format: sql` you must supply mock data for _all columns_.
-
 When using the `sql` format, you can use either an inline SQL query for `rows`:
 
 ### Inline `sql` example
@@ -215,5 +209,6 @@ select 2 as id, 'michelle', null as loaded_at as name
 ```
 </File>
 
-**Note:** Contrary to dbt SQL models, Jinja is unsupported within SQL fixtures for unit tests.
-
+**Notes**
+- Contrary to dbt SQL models, Jinja is unsupported within SQL fixtures for unit tests.
+- You must supply mock data for _all columns_ when using the `sql` format.

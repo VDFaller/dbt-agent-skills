@@ -234,12 +234,20 @@ dbt supports three formats for mock data within unit tests:
 2. `csv`: Inline CSV values or a CSV file.
 3. `sql`: Inline SQL query or a SQL file.
 
+To see examples of each of the formats, see [examples.md](examples.md)
+
+## How to choose the `format`
+
+- Use the `dict` format by default, but fall back to another format as-needed.
+- Use the `sql` format when testing a model that depends on an `ephemeral` model
+- Use the `sql` format when unit testing a column whose data type is not supported by the `dict` or `csv` formats.
+- Use the `csv` or `sql` formats when using a fixture file. Default to `csv`, but fallback to `sql` if any of the column data types are not supported by the `csv` format.
+- The `sql` format is the least readable and requires suppling mock data for _all_ columns, so prefer other formats when possible. But it is also the most flexible, and should be used as the fallback in scenarios where `dict` or `csv` won't work.
+
 Notes:
 - For the `sql` format you must supply mock data for _all columns_ whereas `dict` and `csv` may supply only a subset.
 - Only the `sql` format allows you to unit test a model that depends on an ephemeral model -- `dict` and `csv` can't be used in that case.
 - There are no formats that support Jinja.
-
-To see examples of each of the formats, see [examples.md](examples.md)
 
 # Special cases
 
