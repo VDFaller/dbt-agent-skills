@@ -19,7 +19,6 @@ description: Use when doing any dbt work - building or modifying models, debuggi
 
 **Do NOT use for:**
 
-- One-off ad-hoc analysis
 - Querying the semantic layer (use the [querying-dbt-semantic-layer](/dbt-semantic-layer/querying-dbt-semantic-layer/SKILL.md) skill)
 
 ## Reference Guides
@@ -28,22 +27,12 @@ This skill includes detailed reference guides for specific techniques. Read the 
 
 | Guide | Use When |
 |-------|----------|
-| `planning-dbt-models.md` | Building new models - work backwards from desired output |
+| `planning-dbt-models.md` | Building new models - work backwards from desired output and use `dbt show` to validate results |
 | `discovering-data.md` | Exploring unfamiliar sources or onboarding to a project |
 | `writing-data-tests.md` | Adding tests - prioritize high-value tests over exhaustive coverage |
 | `debugging-dbt-errors.md` | Fixing project parsing, compilation, or database errors |
 | `evaluating-impact-of-a-dbt-model-change.md` | Assessing downstream effects before modifying models |
 | `writing-documentation.md` | Write documentation that doesn't just restate the column name |
-
-## Quick Reference
-
-| Task | Approach |
-|------|----------|
-| New model | See `planning-dbt-models.md`, then `dbt show` to validate |
-| Unknown schema | See `discovering-data.md` before writing SQL |
-| Validate output | `dbt show` with profiling (counts, nulls, min/max) |
-| Add logic | Check if existing model can be extended before creating new one |
-| Configuration | Match existing project patterns, change surgically |
 
 ## DAG building guidelines
 
@@ -52,7 +41,7 @@ This skill includes detailed reference guides for specific techniques. Read the 
   - Before adding a new model or column, always be sure that the same logic isn't already defined elsewhere that can be used.
   - Prefer a change that requires you to add one column to an existing intermediate model over adding an entire additional model to the project.
 
-**When users request new models:** Always ask "why a new model vs extending existing?" before proceeding. Legitimate reasons exist (different materialization, access controls, governance policies), but users often request new models out of habit. Your job is to surface the tradeoff, not blindly comply.
+**When users request new models:** Always ask "why a new model vs extending existing?" before proceeding. Legitimate reasons exist (different grain, precalculation for performance), but users often request new models out of habit. Your job is to surface the tradeoff, not blindly comply.
 
 ## Model building guidelines
 
@@ -62,18 +51,22 @@ This skill includes detailed reference guides for specific techniques. Read the 
   - Use CTEs over subqueries
 - Before building a model, follow `planning-dbt-models.md` to plan your approach.
 - Before modifying or building on existing models, read their YAML documentation:
-  - Find the model's YAML file (can be any `.yml` or `.yaml` file in the models directory)
+  - Find the model's YAML file (can be any `.yml` or `.yaml` file in the models directory, but normally colocated with the SQL file)
   - Check the model's `description` to understand its purpose
   - Read column-level `description` fields to understand what each column represents
   - Review any `meta` properties that document business logic or ownership
   - This context prevents misusing columns or duplicating existing logic
-- When implementing a model, you should use `dbt show` regularly to:
+
+## You must look at the data to be able to correctly model the data
+
+When implementing a model, you must use `dbt show` regularly to:
   - preview the input data you will work with, so that you use relevant columns and values
   - preview the results of your model, so that you know your work is correct
   - run basic data profiling (counts, min, max, nulls) of input and output data, to check for misconfigured joins or other logic errors
 
 ## Cost management best practices
 
+- Use `--limit` with `dbt show` and insert limits early into CTEs when exploring data
 - Use deferral (`--defer --state path/to/prod/artifacts`) to reuse production objects
 - Use [`dbt clone`](https://docs.getdbt.com/reference/commands/clone) to produce zero-copy clones
 - Avoid large unpartitioned table scans in BigQuery
@@ -83,15 +76,15 @@ This skill includes detailed reference guides for specific techniques. Read the 
 
 - You will be working in a terminal environment where you have access to the dbt CLI, and potentially the dbt MCP server. The MCP server may include access to the dbt Cloud platform's APIs if relevant.
 - You should prefer working with the dbt MCP server's tools, and help the user install and onboard the MCP when appropriate.
-- You should not circumvent the dbt abstraction layer to execute DDL directly against the warehouse.
 
 ## Common Mistakes
 
 | Mistake | Why It's Wrong | Fix |
 |---------|----------------|-----|
 | One-shotting models | Data work requires validation; schemas are unknown | Follow `planning-dbt-models.md`, iterate with `dbt show` |
+| Not working iteratively | Changes to multiple models at once makes it hard to debug | Run `dbt build --select changed_model` on each model after modifying it |
 | Assuming schema knowledge | Column names, types, and values vary across warehouses | Follow `discovering-data.md` before writing SQL |
-| Skipping model documentation | Column names don't reveal business meaning | Read YAML descriptions before modifying models |
+| Not reading existing model documentation | Column names don't reveal business meaning | Read YAML descriptions before modifying models |
 | Creating unnecessary models | Warehouse compute has real costs | Extend existing models when possible |
 | Hardcoding table names | Breaks dbt's dependency graph | Always use `{{ ref() }}` and `{{ source() }}` |
 | Global config changes | Configuration cascades unexpectedly | Change surgically, match existing patterns |
