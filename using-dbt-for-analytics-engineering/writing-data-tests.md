@@ -1,6 +1,6 @@
 # Writing Data Tests in dbt
 
-Write high-value tests that catch real data issues without burning warehouse credits on low-signal checks. Testing should drive action—not accumulate alerts.
+Write high-value tests that catch real data issues without burning warehouse credits on low-signal checks. Testing should drive action, not accumulate alerts.
 
 ## When to Use
 
@@ -13,7 +13,7 @@ Write high-value tests that catch real data issues without burning warehouse cre
 
 ### Data Hygiene
 
-Issues you address in your staging layer. Hygienic data meets expectations around formatting (correct values and structure), completeness (no unexpected nulls), and granularity (no duplicates).
+Issues you address in your staging/bronze layer. Hygienic data meets expectations around formatting (correct values and structure), completeness (no unexpected nulls), and granularity (no duplicates).
 
 ### Business-Focused Anomalies
 
@@ -72,15 +72,11 @@ Protect end-user facing data. Test business expectations and new calculated fiel
 models:
   - name: fct_orders
     data_tests:
-      # ONE critical business rule, not ten
+      # Small number of critical business rules
       - dbt_utils.expression_is_true:
           arguments:
             expression: "total_amount >= 0 OR is_refund = true"
-    columns:
-      - name: order_id
-        data_tests:
-          - unique
-          - not_null
+
 ```
 
 ## The Priority Framework
@@ -89,25 +85,25 @@ Not all tests provide equal value. Use this framework to prioritize:
 
 ### Tier 1: Always Add (Structural Integrity)
 
-| Test | Apply To | Why |
-|------|----------|-----|
-| `unique` | Primary keys only | Broken PKs break everything downstream |
-| `not_null` | Primary keys only | Same reason |
-| `relationships` | Foreign keys without orphans | Catches broken joins early |
+| Situation | Test | Why |
+|-----------|------|-----|
+| Primary key column | `unique` | Broken PKs break everything downstream |
+| Primary key column | `not_null` | Broken PKs break everything downstream |
+| Foreign key referencing another table | `relationships` | Catches broken joins early |
 
 ### Tier 2: Add When Discovery Warrants (Data Quality)
 
-| Test | Apply When | Why |
-|------|------------|-----|
-| `accepted_values` | Discovery found enum with known values | Catches new invalid values |
-| `not_null` | Discovery confirmed 0% nulls AND nulls would break logic | Catches regressions |
+| Situation | Test | Why |
+|-----------|------|-----|
+| Enum column with known set of values found via proactive discovery or `dbt show` | `accepted_values` | Catches new invalid values |
+| Non-PK column used in logic, proactive discovery or `dbt show` confirmed 0% nulls | `not_null` | Catches regressions |
 
 ### Tier 3: Selective Use (Business Logic)
 
-| Test | Apply When | Why |
-|------|------------|-----|
-| `expression_is_true` | Logic spans multiple columns | Detects subtle logic bugs |
-| `accepted_range` | Constrained value set such as ages or dates | Avoids illogical values like 200 year old person or login before account creation |
+| Situation | Test | Why |
+|-----------|------|-----|
+| Logic spans multiple columns | `expression_is_true` | Detects subtle logic bugs |
+| Constrained value set such as ages or dates | `accepted_range` | Avoids illogical values like 200 year old person or login before account creation |
 
 ### Tier 4: Avoid Unless Justified
 
@@ -119,25 +115,9 @@ Not all tests provide equal value. Use this framework to prioritize:
 
 ## Before Writing Tests
 
-### Step 1: Check Installed Packages
+Check that required packages are installed (see [managing-packages](./managing-packages.md)).
 
-```bash
-# List installed packages
-cat package-lock.yml
-```
-
-**Common test packages:**
-- `dbt-utils`: `expression_is_true`, `recency`, `at_least_one`, `unique_combination_of_columns`, `accepted_range`
-- `dbt-expectations`: `expect_column_values_to_be_between`, `expect_column_values_to_match_regex`, statistical tests
-- `elementary`: Anomaly detection, schema change monitoring
-
-### Step 2: Install packages if needed
-
-```bash
-dbt deps --add-package dbt-labs/dbt_utils@">=1.0.0,<2.0.0"
-```
-
-### Step 3: Review Discovery Findings
+### Review Discovery Findings
 
 If you used the instructions in [discovering-data](./discovering-data.md), your findings tell you exactly what to test:
 
@@ -185,22 +165,9 @@ Use `where` to limit scope:
 
 ## Common Mistakes
 
-### Testing nulls that are valid
-
-```yaml
-# WRONG: Discovery showed 45% nulls are expected
-- name: optional_field
-  data_tests:
-    - not_null  # Will fail unnecessarily
-
-# RIGHT: No test, document why
-- name: optional_field
-  description: "Nullable - only populated for X scenario"
-```
-
 ### Over-testing business logic
 
-Don't check that the SQL ran correctly, think of places that an assumption could prove false and write a test to detect it.
+Don't check that the SQL ran correctly, think of places that an assumption about the data itself could prove false and write a test to detect it.
 
 ```yaml
 # WRONG: 10 expression tests for one model
@@ -220,7 +187,9 @@ data_tests:
         expression: "total = subtotal + tax + shipping"
 ```
 
-### Not using discovery findings
+To check business logic, write a unit test instead.
+
+### Assuming that you know the contents of a table
 
 ```yaml
 # WRONG: Guessing at values without context
@@ -237,14 +206,3 @@ data_tests:
         arguments:
           values: ['created', 'processing', 'shipped', 'delivered', 'refunded']
 ```
-
-## Quick Reference
-
-| Situation | Action |
-|-----------|--------|
-| Primary key | `unique` + `not_null` always |
-| Foreign key | `relationships` |
-| Enum column | `accepted_values` |
-| Nullable column | No `not_null` test |
-| Large table (1M+) | Use `where` config on expensive tests |
-| Nice-to-know issue | `severity: warn` or remove |

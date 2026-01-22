@@ -2,6 +2,8 @@
 
 Never generate documentation which simply restates the entity's name. Describe **why, not just what**.
 
+Inspect the data before writing documentation about it, using discovering-data.
+
 ## Table level
 
 Describe the grain of the table, its purpose and any edge cases
