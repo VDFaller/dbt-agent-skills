@@ -43,7 +43,8 @@ evals/
 │               ├── output.md       # Full conversation text
 │               ├── metadata.yaml   # Run metrics and tool usage
 │               ├── raw.jsonl       # Complete NDJSON stream
-│               └── context/        # Modified files after run
+│               ├── context/        # Modified files after run
+│               └── transcript/     # HTML conversation viewer
 ├── reports/                # Generated comparison reports
 └── src/skill_eval/         # CLI source code
 ```
@@ -182,6 +183,10 @@ The modified working directory after the run (excluding `.claude/`). Useful for 
 ### raw.jsonl
 
 Complete NDJSON (newline-delimited JSON) stream from Claude for debugging.
+
+### transcript/
+
+HTML files for viewing the conversation in a browser. Open `index.html` to view, with paginated content in `page-XXX.html` files. In VS Code, you can use the [Live Preview](https://marketplace.visualstudio.com/items?itemName=ms-vscode.live-server) extension to view these directly in the editor.
 
 ## Workflow
 
