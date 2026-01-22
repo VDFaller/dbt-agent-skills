@@ -202,7 +202,7 @@ Use `input`s in your unit tests to reference a specific model or source for the 
 - Use “empty” inputs by setting rows to an empty list `rows: []`
     - This is useful if the model has a `ref` or `source` dependency, but its values are irrelevant to this particular unit test. Just beware if the model has a join on that input that would cause rows to drop out!
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 unit_tests:
@@ -224,7 +224,6 @@ unit_tests:
 ...
 
 ```
-</File>
 
 # Data `format`s for unit tests
 

@@ -15,7 +15,7 @@ When testing an incremental model, the expected output is the __result of the ma
 
 For example, say you have an incremental model in your project:
 
-<File name='my_incremental_model.sql'>
+`my_incremental_model.sql`
 
 ```sql
 
@@ -31,8 +31,6 @@ where event_time > (select max(event_time) from {{ this }})
 {% endif %}
 
 ```
-
-</File>
 
 You can define unit tests on `my_incremental_model` to ensure your incremental logic is working as expected:
 

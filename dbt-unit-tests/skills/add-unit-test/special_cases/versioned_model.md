@@ -2,7 +2,7 @@
 
 If your model has multiple versions, the default unit test will run on _all_ versions of your model. To specify version(s) of your model to unit test, use `include` or `exclude` for the desired versions in your model versions config:
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 
@@ -31,4 +31,3 @@ unit_tests:
     ...
 
 ```
-</File>

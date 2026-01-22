@@ -1,6 +1,6 @@
 See below for all the required and optional keys in the YAML definition of unit tests.
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yml
 
@@ -38,5 +38,3 @@ unit_tests:
   - name: <test-name> ...  # declare additional unit tests
 
   ```
-
-</File>

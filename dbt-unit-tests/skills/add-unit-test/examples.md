@@ -2,7 +2,7 @@
 
 This example creates a new `dim_customers` model with a field `is_valid_email_address` that calculates whether or not the customer’s email is valid: 
 
-<file name='dim_customers.sql'>
+`dim_customers.sql`
 
 ```sql
 with customers as (
@@ -38,11 +38,10 @@ check_valid_emails as (
 
 select * from check_valid_emails
 ```
-</file>
 
 The logic posed in this example can be challenging to validate. You can add a unit test to this model to ensure the `is_valid_email_address` logic captures all known edge cases: emails without `.`, emails without `@`, and emails from invalid domains.
 
-<file name='dbt_project.yml'> 
+`dbt_project.yml`
 
 ```yaml
 unit_tests:
@@ -74,7 +73,6 @@ unit_tests:
         - {email: missingdot@gmailcom, is_valid_email_address: false}
 
 ```
-</file>
 
 # Data `format`s for unit tests
 
@@ -86,7 +84,7 @@ The `dict` data format is the default if no `format` is defined.
 
 `dict` requires an inline YAML dictionary for `rows`:
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 unit_tests:
@@ -100,15 +98,13 @@ unit_tests:
           - {id: 2, name: michelle}
 ```
 
-</File>
-
 ## `csv`
 
 ### Inline `csv` example
 
 When using the `csv` format, you can use either an inline CSV string for `rows`:
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 
@@ -124,13 +120,12 @@ unit_tests:
           2,michelle
 
 ```
-</File>
 
 ### Fixture `csv` example
 
 Or, you can provide the name of a CSV file in the `test-paths` location (`tests/fixtures` by default): 
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 
@@ -143,9 +138,8 @@ unit_tests:
         fixture: my_model_a_fixture
 
 ```
-</File>
 
-<File name='tests/fixtures/my_model_a_fixture.csv'>
+`tests/fixtures/my_model_a_fixture.csv`
 
 ```csv
 
@@ -154,7 +148,6 @@ id,name
 2,michelle
 
 ```
-</File>
 
 ## `sql`
 
@@ -162,7 +155,7 @@ When using the `sql` format, you can use either an inline SQL query for `rows`:
 
 ### Inline `sql` example
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 
@@ -178,13 +171,11 @@ unit_tests:
 
 ```
 
-</File>
-
 ### Fixture `sql` example
 
 Or, you can provide the name of a SQL file in the `test-paths` location (`tests/fixtures` by default): 
 
-<File name='models/schema.yml'>
+`models/schema.yml`
 
 ```yaml
 
@@ -197,9 +188,8 @@ unit_tests:
         fixture: my_model_a_fixture
 
 ```
-</File>
 
-<File name='tests/fixtures/my_model_a_fixture.sql'>
+`tests/fixtures/my_model_a_fixture.sql`
 
 ```sql
 
@@ -207,7 +197,6 @@ select 1 as id, 'gerda' as name, null as loaded_at union all
 select 2 as id, 'michelle', null as loaded_at as name
 
 ```
-</File>
 
 **Notes**
 - Contrary to dbt SQL models, Jinja is unsupported within SQL fixtures for unit tests.
