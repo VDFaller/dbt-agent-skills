@@ -143,3 +143,36 @@ def test_parse_json_output_handles_empty_input(tmp_path: Path) -> None:
     assert result["output_text"] == ""
     assert result["tools_used"] == []
     assert result["skills_invoked"] == []
+
+
+def test_runner_prepares_environment_with_folder_path(tmp_path: Path) -> None:
+    """Runner copies entire skill folder when given a directory path."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+
+    scenario_dir = evals_dir / "scenarios" / "test-scenario"
+    scenario_dir.mkdir(parents=True)
+
+    # Create skill folder with SKILL.md and supporting files
+    repo_dir = evals_dir.parent
+    skill_dir = repo_dir / "skills" / "fetch-docs"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text("# Fetch docs skill")
+    (skill_dir / "helper.sh").write_text("#!/bin/bash\necho 'helper'")
+
+    runner = Runner(evals_dir=evals_dir)
+    env_dir, _ = runner.prepare_environment(
+        scenario_dir=scenario_dir,
+        context_dir=None,
+        skills=["skills/fetch-docs"],  # Folder path, not SKILL.md
+    )
+
+    claude_dir = env_dir / ".claude"
+    # Skill folder is copied using folder name
+    skill_dest = claude_dir / "skills" / "fetch-docs"
+    assert skill_dest.exists()
+    assert (skill_dest / "SKILL.md").exists()
+    assert "Fetch docs skill" in (skill_dest / "SKILL.md").read_text()
+    # Supporting files are also copied
+    assert (skill_dest / "helper.sh").exists()
+    assert "helper" in (skill_dest / "helper.sh").read_text()

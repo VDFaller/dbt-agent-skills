@@ -100,7 +100,9 @@ class Runner:
         if credentials:
             (claude_dir / ".credentials.json").write_text(credentials)
 
-        # Copy skills (paths relative to repo root, e.g., "dbt-docs/fetching-dbt-docs/SKILL.md")
+        # Copy skills (paths relative to repo root)
+        # Supports both folder paths (e.g., "dbt-docs/fetching-dbt-docs/")
+        # and file paths (e.g., "dbt-docs/fetching-dbt-docs/SKILL.md")
         if skills:
             skills_dir = claude_dir / "skills"
             skills_dir.mkdir(parents=True, exist_ok=True)
@@ -108,12 +110,17 @@ class Runner:
             for skill_path in skills:
                 src = self.repo_dir / skill_path
                 if src.exists():
-                    # Use the skill's parent directory name as the skill folder
-                    # e.g., "dbt-docs/fetching-dbt-docs/SKILL.md" -> "fetching-dbt-docs/SKILL.md"
-                    skill_name = src.parent.name
-                    dest = skills_dir / skill_name / "SKILL.md"
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy(src, dest)
+                    if src.is_dir():
+                        # Folder path: copy entire folder, skill name is the folder name
+                        skill_name = src.name
+                        dest = skills_dir / skill_name
+                        shutil.copytree(src, dest)
+                    else:
+                        # File path: copy just the file, skill name is parent folder name
+                        skill_name = src.parent.name
+                        dest = skills_dir / skill_name / "SKILL.md"
+                        dest.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy(src, dest)
 
         # Write MCP server config if provided
         mcp_config_path = None
