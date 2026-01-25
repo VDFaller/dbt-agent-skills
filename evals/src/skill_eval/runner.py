@@ -5,9 +5,12 @@ import os
 import shutil
 import subprocess
 import tempfile
+import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from urllib.error import URLError
+from urllib.parse import urlparse
 
 import yaml
 from claude_code_transcripts import generate_html
@@ -49,6 +52,95 @@ class Runner:
         except Exception:
             pass
         return None
+
+    def _is_url(self, path: str) -> bool:
+        """Check if a skill path is an HTTP(S) URL."""
+        try:
+            parsed = urlparse(path)
+            return parsed.scheme in ("http", "https")
+        except Exception:
+            return False
+
+    def _normalize_github_url(self, url: str) -> str:
+        """Convert GitHub blob URLs to raw URLs.
+
+        Converts: https://github.com/org/repo/blob/main/path/SKILL.md
+        To:       https://raw.githubusercontent.com/org/repo/main/path/SKILL.md
+        """
+        parsed = urlparse(url)
+        if parsed.netloc != "github.com":
+            return url
+
+        # GitHub blob URL format: /org/repo/blob/branch/path/to/file
+        path_parts = parsed.path.split("/")
+        if len(path_parts) >= 5 and path_parts[3] == "blob":
+            # Remove "blob" from path: /org/repo/branch/path/to/file
+            new_path = "/".join(path_parts[:3] + path_parts[4:])
+            return f"https://raw.githubusercontent.com{new_path}"
+
+        return url
+
+    def _download_skill(self, url: str, skills_dir: Path) -> None:
+        """Download a skill from an HTTP URL pointing to a SKILL.md file.
+
+        Supports:
+        - Raw file URLs (e.g., https://raw.githubusercontent.com/org/repo/main/skill/SKILL.md)
+        - GitHub blob URLs (automatically converted to raw URLs)
+        - Works with branches, tags, and commit SHAs
+
+        Folder naming (for file organization, not the skill name which comes from frontmatter):
+        - Normal case: uses parent folder of SKILL.md from URL path
+        - GitHub repo root (SKILL.md at root): uses repository name
+        - Other root-level URLs: uses hostname (dots replaced with dashes)
+        """
+        # Convert GitHub blob URLs to raw URLs
+        download_url = self._normalize_github_url(url)
+
+        parsed = urlparse(download_url)
+        path = parsed.path.rstrip("/")
+
+        # Extract folder name from URL path
+        # For GitHub raw URLs: raw.githubusercontent.com/org/repo/ref/path/to/skill/SKILL.md
+        # For other URLs: example.com/path/to/skill/SKILL.md
+        all_parts = [p for p in path.split("/") if p]
+
+        if parsed.netloc == "raw.githubusercontent.com":
+            # GitHub raw URL format: org/repo/ref/[path/to/skill/]SKILL.md
+            # If only 4 parts (org, repo, ref, SKILL.md), skill is at repo root
+            if len(all_parts) <= 4:
+                folder_name = all_parts[1] if len(all_parts) >= 2 else "downloaded-skill"
+            else:
+                folder_name = all_parts[-2]  # Parent folder of SKILL.md
+        elif len(all_parts) >= 2:
+            folder_name = all_parts[-2]  # Parent folder of SKILL.md
+        else:
+            # Root-level skill on non-GitHub host
+            folder_name = parsed.netloc.replace(".", "-")
+
+        dest = skills_dir / folder_name / "SKILL.md"
+        dest.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with urllib.request.urlopen(download_url, timeout=30) as response:
+                content = response.read().decode("utf-8")
+                dest.write_text(content)
+        except URLError as e:
+            raise RuntimeError(f"Failed to download skill from {download_url}: {e}") from e
+
+    def _copy_local_skill(self, skill_path: str, skills_dir: Path) -> None:
+        """Copy a local skill (file or folder) to the skills directory."""
+        src = self.repo_dir / skill_path
+        if not src.exists():
+            return
+
+        if src.is_dir():
+            # Folder path: copy entire folder
+            shutil.copytree(src, skills_dir / src.name)
+        else:
+            # File path: copy just the file, skill name is parent folder name
+            dest = skills_dir / src.parent.name / "SKILL.md"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(src, dest)
 
     def _generate_transcript(self, env_dir: Path, output_dir: Path) -> None:
         """Generate HTML transcript from Claude's native session file."""
@@ -100,27 +192,16 @@ class Runner:
         if credentials:
             (claude_dir / ".credentials.json").write_text(credentials)
 
-        # Copy skills (paths relative to repo root)
-        # Supports both folder paths (e.g., "dbt-docs/fetching-dbt-docs/")
-        # and file paths (e.g., "dbt-docs/fetching-dbt-docs/SKILL.md")
+        # Load skills from local paths or HTTP URLs
         if skills:
             skills_dir = claude_dir / "skills"
             skills_dir.mkdir(parents=True, exist_ok=True)
 
             for skill_path in skills:
-                src = self.repo_dir / skill_path
-                if src.exists():
-                    if src.is_dir():
-                        # Folder path: copy entire folder, skill name is the folder name
-                        skill_name = src.name
-                        dest = skills_dir / skill_name
-                        shutil.copytree(src, dest)
-                    else:
-                        # File path: copy just the file, skill name is parent folder name
-                        skill_name = src.parent.name
-                        dest = skills_dir / skill_name / "SKILL.md"
-                        dest.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy(src, dest)
+                if self._is_url(skill_path):
+                    self._download_skill(skill_path, skills_dir)
+                else:
+                    self._copy_local_skill(skill_path, skills_dir)
 
         # Write MCP server config if provided
         mcp_config_path = None

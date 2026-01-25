@@ -99,13 +99,41 @@ sets:
 
 ### Skills
 
-Skills are referenced by path relative to the repo root:
+Skills can be referenced in three ways:
+
+1. **Local file path** (relative to repo root):
+   ```yaml
+   skills:
+     - dbt-commands/debugging-dbt-errors/SKILL.md
+   ```
+
+2. **Local folder path** (copies entire folder including supporting files):
+   ```yaml
+   skills:
+     - dbt-unit-tests/skills/add-unit-test
+   ```
+
+3. **HTTP URL** (downloads skill from remote server):
+   ```yaml
+   skills:
+     # GitHub blob URL (automatically converted to raw)
+     - https://github.com/org/repo/blob/main/skills/my-skill/SKILL.md
+     # Works with branches, tags, and commit SHAs
+     - https://github.com/org/repo/blob/v1.2.3/skills/my-skill/SKILL.md
+     - https://github.com/org/repo/blob/abc123def/skills/my-skill/SKILL.md
+     # Or use raw URL directly
+     - https://raw.githubusercontent.com/org/repo/main/skills/my-skill/SKILL.md
+   ```
+
+You can mix local and remote skills in the same skill set:
 
 ```yaml
 skills:
   - dbt-commands/debugging-dbt-errors/SKILL.md
-  - dbt-docs/fetching-dbt-docs/SKILL.md
+  - https://github.com/org/repo/blob/main/skills/external-skill/SKILL.md
 ```
+
+**Note:** The URL must point to a `SKILL.md` file. GitHub blob URLs are automatically converted to raw URLs. Directory URLs are not supported.
 
 ### MCP Servers
 
@@ -232,4 +260,21 @@ sets:
         command: uvx
         args: [--env-file, .env, dbt-mcp@latest]
     allowed_tools: [Read, Glob, Grep, Skill, mcp__dbt__*]
+```
+
+### Testing remote skills
+
+```yaml
+# Compare a local skill against a remote version
+sets:
+  - name: local-skill
+    skills:
+      - dbt-commands/debugging-dbt-errors/SKILL.md
+    allowed_tools: [Read, Glob, Grep, Edit, Skill]
+
+  - name: remote-skill
+    skills:
+      # GitHub blob URL - automatically converted to raw
+      - https://github.com/org/repo/blob/main/skills/debugging-dbt-errors/SKILL.md
+    allowed_tools: [Read, Glob, Grep, Edit, Skill]
 ```

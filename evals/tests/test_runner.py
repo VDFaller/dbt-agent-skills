@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from skill_eval.runner import Runner
 
@@ -176,3 +177,255 @@ def test_runner_prepares_environment_with_folder_path(tmp_path: Path) -> None:
     # Supporting files are also copied
     assert (skill_dest / "helper.sh").exists()
     assert "helper" in (skill_dest / "helper.sh").read_text()
+
+
+def test_runner_is_url_detection(tmp_path: Path) -> None:
+    """Runner correctly identifies HTTP(S) URLs."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    runner = Runner(evals_dir=evals_dir)
+
+    # Should be detected as URLs
+    assert runner._is_url("https://example.com/skills/my-skill/SKILL.md")
+    assert runner._is_url("http://example.com/skills/my-skill/SKILL.md")
+    assert runner._is_url("https://raw.githubusercontent.com/org/repo/main/skills/SKILL.md")
+    assert runner._is_url("https://github.com/org/repo/blob/main/skills/SKILL.md")
+
+    # Should NOT be detected as URLs
+    assert not runner._is_url("dbt-docs/fetching-dbt-docs/SKILL.md")
+    assert not runner._is_url("skills/debug")
+    assert not runner._is_url("/absolute/path/SKILL.md")
+    assert not runner._is_url("")
+
+
+def test_runner_normalizes_github_blob_urls(tmp_path: Path) -> None:
+    """Runner converts GitHub blob URLs to raw URLs."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    runner = Runner(evals_dir=evals_dir)
+
+    # GitHub blob URL should be converted
+    blob_url = "https://github.com/org/repo/blob/main/skills/my-skill/SKILL.md"
+    raw_url = "https://raw.githubusercontent.com/org/repo/main/skills/my-skill/SKILL.md"
+    assert runner._normalize_github_url(blob_url) == raw_url
+
+    # Different branch
+    blob_url = "https://github.com/org/repo/blob/feature-branch/path/to/SKILL.md"
+    raw_url = "https://raw.githubusercontent.com/org/repo/feature-branch/path/to/SKILL.md"
+    assert runner._normalize_github_url(blob_url) == raw_url
+
+    # Tag
+    blob_url = "https://github.com/org/repo/blob/v1.2.3/skills/my-skill/SKILL.md"
+    raw_url = "https://raw.githubusercontent.com/org/repo/v1.2.3/skills/my-skill/SKILL.md"
+    assert runner._normalize_github_url(blob_url) == raw_url
+
+    # Commit SHA
+    blob_url = "https://github.com/org/repo/blob/abc123def456/skills/my-skill/SKILL.md"
+    raw_url = "https://raw.githubusercontent.com/org/repo/abc123def456/skills/my-skill/SKILL.md"
+    assert runner._normalize_github_url(blob_url) == raw_url
+
+    # Already raw URL should be unchanged
+    raw_url = "https://raw.githubusercontent.com/org/repo/main/skills/SKILL.md"
+    assert runner._normalize_github_url(raw_url) == raw_url
+
+    # Non-GitHub URL should be unchanged
+    other_url = "https://example.com/skills/my-skill/SKILL.md"
+    assert runner._normalize_github_url(other_url) == other_url
+
+
+def test_runner_downloads_skill_from_url(tmp_path: Path) -> None:
+    """Runner downloads skill from HTTP URL."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    runner = Runner(evals_dir=evals_dir)
+
+    # Mock urllib.request.urlopen
+    skill_content = "# Downloaded Skill\n\nThis is a test skill."
+    mock_response = MagicMock()
+    mock_response.read.return_value = skill_content.encode("utf-8")
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            skills=["https://example.com/skills/my-skill/SKILL.md"],
+        )
+
+        # Verify urlopen was called with correct URL
+        mock_urlopen.assert_called_once_with(
+            "https://example.com/skills/my-skill/SKILL.md",
+            timeout=30,
+        )
+
+        # Verify skill was saved correctly
+        skill_file = env_dir / ".claude" / "skills" / "my-skill" / "SKILL.md"
+        assert skill_file.exists()
+        assert "Downloaded Skill" in skill_file.read_text()
+
+
+def test_runner_downloads_skill_from_raw_github_url(tmp_path: Path) -> None:
+    """Runner downloads skill from raw GitHub URL."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    runner = Runner(evals_dir=evals_dir)
+
+    skill_content = "# GitHub Skill"
+    mock_response = MagicMock()
+    mock_response.read.return_value = skill_content.encode("utf-8")
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            skills=["https://raw.githubusercontent.com/org/repo/main/skills/github-skill/SKILL.md"],
+        )
+
+        mock_urlopen.assert_called_once_with(
+            "https://raw.githubusercontent.com/org/repo/main/skills/github-skill/SKILL.md",
+            timeout=30,
+        )
+
+        # Skill name extracted from parent folder in URL path
+        skill_file = env_dir / ".claude" / "skills" / "github-skill" / "SKILL.md"
+        assert skill_file.exists()
+        assert "GitHub Skill" in skill_file.read_text()
+
+
+def test_runner_downloads_skill_from_github_blob_url(tmp_path: Path) -> None:
+    """Runner converts GitHub blob URL to raw and downloads."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    runner = Runner(evals_dir=evals_dir)
+
+    skill_content = "# Blob Skill"
+    mock_response = MagicMock()
+    mock_response.read.return_value = skill_content.encode("utf-8")
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            # GitHub blob URL (not raw)
+            skills=["https://github.com/org/repo/blob/main/skills/blob-skill/SKILL.md"],
+        )
+
+        # Should be converted to raw URL
+        mock_urlopen.assert_called_once_with(
+            "https://raw.githubusercontent.com/org/repo/main/skills/blob-skill/SKILL.md",
+            timeout=30,
+        )
+
+        skill_file = env_dir / ".claude" / "skills" / "blob-skill" / "SKILL.md"
+        assert skill_file.exists()
+        assert "Blob Skill" in skill_file.read_text()
+
+
+def test_runner_downloads_root_level_skill_uses_hostname(tmp_path: Path) -> None:
+    """Runner uses hostname as folder name for root-level skills."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    runner = Runner(evals_dir=evals_dir)
+
+    skill_content = "# Root Skill"
+    mock_response = MagicMock()
+    mock_response.read.return_value = skill_content.encode("utf-8")
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response):
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            skills=["https://example.com/SKILL.md"],
+        )
+
+        # Uses hostname (dots replaced with dashes) as folder name
+        skill_file = env_dir / ".claude" / "skills" / "example-com" / "SKILL.md"
+        assert skill_file.exists()
+
+
+def test_runner_downloads_github_root_skill_uses_repo_name(tmp_path: Path) -> None:
+    """Runner uses repo name for GitHub root-level skills."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    runner = Runner(evals_dir=evals_dir)
+
+    skill_content = "# GitHub Root Skill"
+    mock_response = MagicMock()
+    mock_response.read.return_value = skill_content.encode("utf-8")
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response):
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            # GitHub blob URL at repo root
+            skills=["https://github.com/myorg/my-repo/blob/main/SKILL.md"],
+        )
+
+        # Uses repo name as folder
+        skill_file = env_dir / ".claude" / "skills" / "my-repo" / "SKILL.md"
+        assert skill_file.exists()
+
+
+def test_runner_mixes_local_and_url_skills(tmp_path: Path) -> None:
+    """Runner handles mix of local and URL skills."""
+    evals_dir = tmp_path / "evals"
+    evals_dir.mkdir()
+    scenario_dir = evals_dir / "scenarios" / "test"
+    scenario_dir.mkdir(parents=True)
+
+    # Create local skill
+    repo_dir = evals_dir.parent
+    local_skill_dir = repo_dir / "skills" / "local-skill"
+    local_skill_dir.mkdir(parents=True)
+    (local_skill_dir / "SKILL.md").write_text("# Local Skill")
+
+    runner = Runner(evals_dir=evals_dir)
+
+    # Mock for URL skill
+    mock_response = MagicMock()
+    mock_response.read.return_value = b"# Remote Skill"
+    mock_response.__enter__ = MagicMock(return_value=mock_response)
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    with patch("skill_eval.runner.urllib.request.urlopen", return_value=mock_response):
+        env_dir, _ = runner.prepare_environment(
+            scenario_dir=scenario_dir,
+            context_dir=None,
+            skills=[
+                "skills/local-skill/SKILL.md",  # Local
+                "https://example.com/skills/remote-skill/SKILL.md",  # URL
+            ],
+        )
+
+        # Both skills should be present
+        local_file = env_dir / ".claude" / "skills" / "local-skill" / "SKILL.md"
+        remote_file = env_dir / ".claude" / "skills" / "remote-skill" / "SKILL.md"
+
+        assert local_file.exists()
+        assert "Local Skill" in local_file.read_text()
+        assert remote_file.exists()
+        assert "Remote Skill" in remote_file.read_text()
