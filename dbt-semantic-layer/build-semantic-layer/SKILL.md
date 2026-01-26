@@ -8,7 +8,7 @@ description: Use when creating or modifying dbt Semantic Layer components includ
 This skill guides the creation and modification of dbt Semantic Layer components: semantic models, entities, dimensions, and metrics.
 
 > [!NOTE]
-This skill contains guidance for the new dbt semantic layer YAML spec, valid for dbt 1.12.0 and above. If the user is using a different version of dbt, you can use the [migration guide](https://docs.getdbt.com/docs/build/semantic-layer/yaml-reference) to help them migrate to the new spec and add new components to their semantic layer. Ask the user if they want to migrate to the new spec before proceeding.
+This skill contains guidance for the new dbt semantic layer YAML spec, valid for dbt 1.12.0 and above. If the user is using a different version of dbt, you can use the [migration guide](https://docs.getdbt.com/docs/build/latest-metrics-spec) to help them migrate to the new spec and add new components to their semantic layer. Ask the user if they want to migrate to the new spec before proceeding.
 
 ## Entry Points
 
