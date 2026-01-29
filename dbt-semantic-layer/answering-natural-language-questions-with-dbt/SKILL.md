@@ -1,6 +1,6 @@
 ---
 name: answering-natural-language-questions-with-dbt
-description: Use when answering business questions that require querying data in a dbt project, whether via semantic layer, model discovery, or manifest analysis
+description: Use when a user asks a business question that requires querying data (e.g., "What were total sales last quarter?"). NOT for validating, testing, or building dbt models during development.
 ---
 
 # Answering Natural Language Questions with dbt
@@ -8,6 +8,17 @@ description: Use when answering business questions that require querying data in
 ## Overview
 
 Answer data questions using the best available method: semantic layer first, then SQL modification, then model discovery, then manifest analysis. Always exhaust options before saying "cannot answer."
+
+**Use for:** Business questions from users that need data answers
+- "What were total sales last month?"
+- "How many active customers do we have?"
+- "Show me revenue by region"
+
+**Not for:**
+- Validating model logic during development
+- Testing dbt models or semantic layer definitions
+- Building or modifying dbt models
+- `dbt run`, `dbt test`, or `dbt build` workflows
 
 ## Decision Flow
 
@@ -174,6 +185,7 @@ jq '.nodes["model.project_name.model_name"].columns' target/catalog.json
 - Suggesting database-level fixes for semantic layer gaps
 - Reading entire manifest.json without filtering
 - Using staging models when mart models exist
+- Using this to validate model correctness rather than answer business questions
 
 ## Common Mistakes
 
