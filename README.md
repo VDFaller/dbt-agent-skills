@@ -15,7 +15,7 @@ Agent Skills are folders of instructions, scripts, and resources that agents can
 
 ## Installation
 
-### Claude Code (recommended)
+### Claude Code
 
 Add the dbt skills marketplace:
 
@@ -23,13 +23,9 @@ Add the dbt skills marketplace:
 /plugin marketplace add dbt-labs/dbt-agent-skills
 ```
 
-Skills are fetched from this repository and **automatically stay up to date** as we publish improvements.
-
 ### Other AI Clients
 
 Use the [Vercel Skills CLI](https://github.com/vercel-labs/skills) to install skills from this repository.
-
-> **Note:** This method copies skills into your project. To get updates, you'll need to re-run the install command.
 
 ```bash
 # Preview available skills
@@ -43,6 +39,12 @@ npx skills add dbt-labs/dbt-agent-skills --skill using-dbt-for-analytics-enginee
 
 # Install globally (across all projects)
 npx skills add dbt-labs/dbt-agent-skills --global
+
+# Check for updates
+npx skills check
+
+# Update installed skills
+npx skills update
 ```
 
 The Vercel Skills CLI supports 30+ AI agents including Cursor, Cline, GitHub Copilot, and others.
