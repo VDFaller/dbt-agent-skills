@@ -16,6 +16,10 @@ class Grade:
     criteria: dict = field(default_factory=dict)
     notes: str = ""
     observations: str = ""
+    # Skill usage tracking (computed from run metadata)
+    skills_available: list[str] = field(default_factory=list)
+    skills_invoked: list[str] = field(default_factory=list)
+    skill_usage_pct: float | None = None
 
 
 @dataclass

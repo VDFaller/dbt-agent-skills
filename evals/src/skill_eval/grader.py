@@ -10,6 +10,32 @@ import yaml
 
 from skill_eval.models import Grade
 
+
+def compute_skill_usage(metadata: dict) -> tuple[list[str], list[str], float | None]:
+    """Compute skill usage statistics from run metadata.
+
+    Args:
+        metadata: Run metadata containing skills_available and skills_invoked
+
+    Returns:
+        Tuple of (skills_available, skills_invoked, usage_percentage)
+        usage_percentage is None if no skills were available
+    """
+    available = metadata.get("skills_available", [])
+    invoked = metadata.get("skills_invoked", [])
+
+    if not available:
+        return available, invoked, None
+
+    # Calculate percentage of available skills that were invoked
+    invoked_set = set(invoked)
+    available_set = set(available)
+    used_count = len(invoked_set & available_set)
+    pct = (used_count / len(available_set)) * 100 if available_set else None
+
+    return available, invoked, pct
+
+
 GRADING_PROMPT_TEMPLATE = """You are grading an AI assistant's response to a task.
 
 ## Task Given
