@@ -44,7 +44,7 @@ Three CLIs exist. **Ask the user which one if unsure.**
 | Flavor | Location | Notes |
 |--------|----------|-------|
 | **dbt Core** | Python venv | `pip show dbt-core` or `uv pip show dbt-core` |
-| **dbt Fusion** | `~/.local/bin/dbt` or `dbtf` | Rust-based, faster |
+| **dbt Fusion** | `~/.local/bin/dbt` or `dbtf` | Faster and has stronger SQL comprehension |
 | **dbt Cloud CLI** | `~/.local/bin/dbt` | Go-based, runs on platform |
 
 **Common setup:** Core in venv + Fusion at `~/.local/bin`. Running `dbt` uses Core. Use `dbtf` or `~/.local/bin/dbt` for Fusion.
