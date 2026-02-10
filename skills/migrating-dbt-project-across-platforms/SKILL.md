@@ -165,23 +165,6 @@ Use this structure when documenting migration changes:
 - **Final unit test failures**: 0
 - **Final build status**: Success
 
-## SQL Dialect Changes
-
-### Function Replacements
-| Source Function | Target Function | Files Affected |
-|----------------|----------------|----------------|
-| `GENERATOR(ROWCOUNT => n)` | `sequence(1, n)` | `models/marts/core/fct_orders.sql` |
-
-### Syntax Changes
-| Source Syntax | Target Syntax | Files Affected |
-|---------------|---------------|----------------|
-| `FLATTEN(input => col)` | `EXPLODE(col)` | `models/staging/stg_items.sql` |
-
-### Type Changes
-| Source Type | Target Type | Files Affected |
-|-------------|-------------|----------------|
-| `VARIANT` | `STRING` | `models/staging/stg_raw.sql` |
-
 ## Configuration Changes
 
 ### dbt_project.yml
@@ -209,7 +192,7 @@ Use this structure when documenting migration changes:
 1. **Don't pre-fix issues that Fusion hasn't flagged.** Fusion's error output is the source of truth. Making speculative changes leads to unnecessary modifications and potential regressions. Fix only what Fusion reports.
 2. **Don't try to document every possible SQL dialect difference.** There are thousands of platform-specific SQL nuances. Fusion knows them all. Let Fusion find the issues; your job is to fix what it reports.
 3. **Don't skip unit tests.** Compilation success alone doesn't prove the migration is correct. Unit tests verify that the data outputs are consistent between platforms — this is the proof that the migration preserves business logic.
-4. **Don't modify unit test expectations unless there's a legitimate platform difference.** If a unit test fails, first check if the model logic needs fixing. Only adjust test expectations for genuine platform behavioral differences (e.g., decimal precision, NULL handling).
+4. **Don't modify unit test expectations unless there's a legitimate platform difference.** If a unit test fails, first check if the model logic needs fixing. Only adjust test expectations for genuine platform behavioral differences (e.g., decimal precision, NULL handling). If you modified a unit test, let the user know.
 5. **Don't remove models or features without user approval.** If a model can't be migrated (e.g., it uses a platform-specific feature with no equivalent), inform the user and let them decide.
 6. **Don't change the data architecture.** The migration should preserve the existing model structure, materializations, and relationships. Platform migration is a dialect translation, not a refactoring opportunity.
 

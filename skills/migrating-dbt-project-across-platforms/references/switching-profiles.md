@@ -134,7 +134,7 @@ If the source data (e.g., `snowflake_sample_data.tpch_sf1`) doesn't exist on the
 - If not, consider using dbt seeds to load a subset of the data
 - Update source definitions to point to wherever the data lives on the target
 
-### TPCH data across platforms
+### Accessing sample TPCH data across platforms
 
 TPCH sample data is commonly available:
 - **Snowflake**: `snowflake_sample_data.tpch_sf1`
