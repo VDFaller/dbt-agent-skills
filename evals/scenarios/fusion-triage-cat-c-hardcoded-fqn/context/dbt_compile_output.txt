@@ -1,0 +1,12 @@
+dbt-fusion 2.0.0-preview.140 (v2.0.0-preview.140-modified 2026-03-02 10:41:41)
+   Loading ~/.dbt/profiles.yml
+    Failed [  4.65s] model fusion_tests_schema.example_model (view)
+
+=================== Errors and Warnings ====================
+error: dbt0214: Table 'PROD.RAW.ORDERS' is missing in remote
+  --> models/example_model.sql:9:6 (target/compiled/models/example_model.sql:9:6)
+
+==================== Execution Summary =====================
+Finished 'compile' with 1 error for target 'snowflake' [5.4s]
+Processed: 1 model
+Summary: 1 total | 1 error

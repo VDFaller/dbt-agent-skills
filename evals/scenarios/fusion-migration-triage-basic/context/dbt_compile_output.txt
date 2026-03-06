@@ -1,0 +1,15 @@
+dbt-fusion 2.0.0-preview.140 (v2.0.0-preview.140-modified 2026-03-02 10:41:41)
+   Loading ~/.dbt/profiles.yml
+    Failed [-------] model fusion_tests_schema.example_model (table)
+
+=================== Errors and Warnings ====================
+warning: dbt1000: The key 'owner' was not found using config.require('owner'), but was detected as a custom config under 'meta'. Please use config.meta_get('owner') or config.meta_require('owner') instead of config.require('owner') to access the custom config value if intended.
+  --> models/example_model.sql:11:22
+error: dbt1501: Failed to render SQL invalid operation: Required config key 'owner' not found in config
+(in models/example_model.sql:11:22)
+  --> models/example_model.sql:11:22
+
+==================== Execution Summary =====================
+Finished 'compile' with 1 warning and 1 error for target 'postgres' [1.2s]
+Processed: 1 model
+Summary: 1 total | 1 error
